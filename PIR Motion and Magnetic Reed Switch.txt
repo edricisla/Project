@@ -1,0 +1,64 @@
+import RPi.GPIO as GPIO
+import time
+import sys
+import signal
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+
+DOOR_SENSOR_PIN = 26
+RED_LIGHT = 22
+MOTION_SENSOR = 21
+BUZZER = 9
+
+GPIO.setup(BUZZER, GPIO.OUT)
+GPIO.setup(MOTION_SENSOR, GPIO.IN)
+GPIO.setup(DOOR_SENSOR_PIN, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+GPIO.setup(RED_LIGHT, GPIO.OUT)
+GPIO.output(RED_LIGHT, False)
+
+isOpen = None
+oldIsOpen = None
+
+def send_text(): #sends text message to phone using twilio
+    from twilio.rest import Client
+    account_sid ="AC0ec9b7003d2254275cd738da838321be"
+    auth_token ="c77612774cdb4ea04f444d594a671499"
+
+    client = Client(account_sid, auth_token)
+
+    message = client.api.account.messages.create(
+    to="+61411136305",
+    from_="+61480016187",
+    body="Intruder has entered!")
+    
+def cleanupLights(signal, frame):
+        GPIO.output(RED_LIGHT, False)
+        GPIO.cleanup()
+        sys.exit(0)
+
+signal.signal(signal.SIGINT, cleanupLights)
+
+while True:
+        oldIsOpen = isOpen
+        isOpen = GPIO.input(DOOR_SENSOR_PIN)
+        
+        #checks if the door is open
+        if (isOpen and (isOpen !=oldIsOpen)):
+            GPIO.output(RED_LIGHT, True)
+            input_state = GPIO.input(MOTION_SENSOR)
+            print ('Door is open')
+            #checks if motion is detected
+            if input_state == True:
+                GPIO.output(BUZZER,1)
+                print ('Motion Detected')
+                #send_text()
+                
+                time.sleep(1)
+                
+                GPIO.output(BUZZER,0)
+                time.sleep(2)
+        elif (isOpen != oldIsOpen):
+            GPIO.output(RED_LIGHT, False)
+            
+        time.sleep(0.1)
