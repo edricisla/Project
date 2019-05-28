@@ -1,0 +1,34 @@
+import RPi.GPIO as GPIO
+import time
+import requests
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+RED_LED = 22
+PIR = 21
+
+GPIO.setup(PIR, GPIO.IN)
+GPIO.setup(RED_LED, GPIO.OUT)
+
+try:
+    while True:
+        currentstate = GPIO.input(PIR)
+        
+        if currentstate == 1:
+            print("Motion Detected")
+            GPIO.output(RED_LED, True)
+            time.sleep(1)
+            GPIO.output(RED_LED, False)
+            time.sleep(1)
+          
+        elif currentstate == 0:
+            print("NO Motion Detected")
+            GPIO.output(RED_LED, False)
+            time.sleep(1)
+      
+except KeyboardInterrupt:
+    Print("Quit")
+    
+
+
