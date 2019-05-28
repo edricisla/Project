@@ -1,0 +1,67 @@
+import RPi.GPIO as GPIO
+import time
+import requests
+import sys
+import signal
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+#GPIO pin number for pir motion sensor
+PIR = 21
+DOOR_SENSOR_PIN = 26
+RED_LED = 22
+
+GPIO.setup(RED_LED, GPIO.OUT)
+GPIO.setup(PIR, GPIO.IN)
+GPIO.setup(DOOR_SENSOR_PIN, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+
+currentstate = 0
+prevstate = 0
+prev_doorOpen = None
+doorOpen = None
+
+try:
+    print("##################")
+    print("Starting up..")
+    print("System Ready")
+    print("##################")
+    
+    while True:
+        prev_doorOpen = doorOpen
+        doorOpen = GPIO.input(DOOR_SENSOR_PIN)
+        motionstate = GPIO.input(PIR)
+
+        if (doorOpen == True and doorOpen != prev_doorOpen):
+            print("Alert. Door has been opened")
+            #IFTTT notification when door opens
+            r = requests.post('https://maker.ifttt.com/trigger/door_open/with/key/bqjXILQW0Eo28PxNIBVAzY', params={ "value1" : "none", "value2" : "none", "value3" : "none" })
+            
+            #Turns Red Led on
+            GPIO.output(RED_LED, True)
+            
+            #checks for motion and stores it in motionstate
+            motionstate = GPIO.input(PIR)
+            
+            if motionstate == 1:
+                print("Alert. Motion Detected")
+                #IFTTT notification when motion sensed
+                r = requests.post('https://maker.ifttt.com/trigger/motion_detected/with/key/bqjXILQW0Eo28PxNIBVAzY', params={ "value1" : "motionstate", "value2" : "none", "value3" : "none" })
+        
+        elif doorOpen != prev_doorOpen:
+            print("Door Is Closed")
+            
+            #Turns Red Led Off
+            GPIO.output(RED_LED, False)
+            
+            time.sleep(0.1)
+        
+                
+
+            
+            
+      
+except KeyboardInterrupt:
+    print("Quit due to KeyboardInterrupt")
+    GPIO.cleanup()
+            
